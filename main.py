@@ -123,4 +123,155 @@ def main():
     #设置难度级别
     level=1
 
+    #全屏炸弹
+    bomb_image=pygame.image.load("images/bomb.png").convert_alpha()
+    bomb_rect=bomb_image.get_rect()
+    bomb_font=pygame.font.Font("font/font.ttf",48)
+    bomb_num=3
+
+    #超级子弹定时器
+    DOUBLE_BULLET_TIME=USEREVENT+1
+
+    #标志是否使用超级子弹
+    is_double_bullet=False
+
+    #解除我方无敌状态定时器
+    INVINCIBLE_TIME=USEREVENT+2    
+
+    #每30秒发送一个补给包
+    bullet_supply=supply.Bullet_Supply(bg_size)
+    bomb_supply=supply.Bomb_Supply(bg_size)
+    SUPPLY_TIME=USEREVENT
+    pygame.time.set_timer(SUPPLY_TIME,30*1000)
     
+    
+    #生成普通子弹
+    bullet1=[]
+    bullet1_index=0
+    BULLET1_NUM=4
+    for i in range(BULLET1_NUM):
+        bullet1.append(bullet.Bullet1(me.rect.midtop))
+
+     #生成超级子弹
+    bullet2=[]
+    bullet2_index=0
+    BULLET2_NUM=8
+    for i in range(BULLET2_NUM):
+        bullet2.append(bullet.Bullet2((me.rect.centerx-33,me.rect.centery)))
+        bullet2.append(bullet.Bullet2((me.rect.centerx+30,me.rect.centery)))
+      
+    clock=pygame.time.Clock()
+
+    #用于替换图片，绘制我方飞机时变换图片
+    switch_image=True
+
+    #用于延迟
+    delay=100
+
+    #生命数量
+    life_image=pygame.image.load("images/life.png").convert_alpha()
+    life_rect=life_image.get_rect()
+    life_num=3
+
+    #用于限制重复打开记录文件
+    recorded=False
+    
+    running=True
+    
+    while running:
+        for event in pygame.event.get():
+
+            if event.type==QUIT: #退出游戏
+                pygame.quit()
+                sys.exit()
+            #暂停事件
+            elif event.type==MOUSEBUTTONDOWN:
+                if event.button==1 and paused_rect.collidepoint(event.pos):
+                    paused=not paused
+                    if paused:
+                        pygame.time.set_timer(SUPPLY_TIME,0)
+                        pygame.mixer.music.pause()
+                        pygame.mixer.pause()
+                    else:
+                        pygame.time.set_timer(SUPPLY_TIME,30*1000)
+                        pygame.mixer.music.unpause()
+                        pygame.mixer.unpause()
+
+            elif event.type==MOUSEMOTION:
+                if paused_rect.collidepoint(event.pos):
+                    if paused:
+                        paused_image=resume_pressed_image
+                    else:
+                        paused_image=paused_pressed_image
+                else:
+                    if paused:
+                        paused_image=resume_nor_image
+                    else:
+                        paused_image=paused_nor_image
+
+            #全屏炸弹事件           
+            elif event.type==KEYDOWN:
+                if event.key==K_SPACE:
+                    if bomb_num > 0:
+                        bomb_num-=1
+                        bomb_sound.play()
+                        for each in enemies:
+                            if each.rect.bottom>0:
+                                each.active=False
+            #补给包事件
+            elif event.type==SUPPLY_TIME:
+                supply_sound.play()
+                if choice([True, False]):
+                    bomb_supply.reset()
+                else:
+                    bullet_supply.reset()
+
+            #超级子弹事件
+            elif event.type==DOUBLE_BULLET_TIME:
+                is_double_bullet=False
+                pygame.time.set_timer(DOUBLE_BULLET_TIME,0)
+
+            elif event.type==INVINCIBLE_TIME:
+                me.invincible=False
+                pygame.time.set_timer(INVINCIBLE_TIME,0)
+                            
+        #根据用户的得分增加难度
+        if level==1 and score>50000:
+            level=2
+            upgrade_sound.play()
+            #增加3加小型敌机、2加中型敌机、1加大型敌机
+            add_small_enemies(small_enemies,enemies,3)
+            add_mid_enemies(mid_enemies,enemies,2)
+            add_big_enemies(big_enemies,enemies,1)
+            #提升小型敌机的速度
+            inc_speed(small_enemies,1)
+        elif level==2 and score>200000:
+            level=3
+            upgrade_sound.play()
+            #增加3加小型敌机、2加中型敌机、1加大型敌机
+            add_small_enemies(small_enemies,enemies,5)
+            add_mid_enemies(mid_enemies,enemies,3)
+            add_big_enemies(big_enemies,enemies,2)
+            #提升小型敌机的速度
+            inc_speed(small_enemies,1)
+            inc_speed(mid_enemies,1)
+        elif level==3 and score>6400000:
+            level=4
+            upgrade_sound.play()
+            #增加3加小型敌机、2加中型敌机、1加大型敌机
+            add_small_enemies(small_enemies,enemies,5)
+            add_mid_enemies(mid_enemies,enemies,3)
+            add_big_enemies(big_enemies,enemies,2)
+            #提升小型敌机的速度
+            inc_speed(small_enemies,1)
+            inc_speed(mid_enemies,1)
+        elif level==4 and score>1000000:
+            level=5
+            upgrade_sound.play()
+            #增加3加小型敌机、2加中型敌机、1加大型敌机
+            add_small_enemies(small_enemies,enemies,5)
+            add_mid_enemies(mid_enemies,enemies,3)
+            add_big_enemies(big_enemies,enemies,2)
+            #提升小型敌机的速度
+            inc_speed(small_enemies,1)
+            inc_speed(mid_enemies,1)
