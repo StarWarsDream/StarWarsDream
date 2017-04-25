@@ -275,3 +275,162 @@ def main():
             #提升小型敌机的速度
             inc_speed(small_enemies,1)
             inc_speed(mid_enemies,1)
+        
+        #画出屏幕背景
+        screen.blit(background,(0,0))
+
+        if life_num and not paused:
+            # 检测用户的键盘操作
+            key_pressed=pygame.key.get_pressed()
+            if key_pressed[K_w] or key_pressed[K_UP]:
+                me.moveUp()
+            if key_pressed[K_s] or key_pressed[K_DOWN]:
+                me.moveDown()
+            if key_pressed[K_a] or key_pressed[K_LEFT]:
+                me.moveLeft()
+            if key_pressed[K_d] or key_pressed[K_RIGHT]:
+                me.moveRight()
+
+            # 绘制全屏炸弹补给并检测是否获得
+            if bomb_supply.active:
+                bomb_supply.move()
+                screen.blit(bomb_supply.image,bomb_supply.rect)
+                if pygame.sprite.collide_mask(bomb_supply,me):
+                    get_bomb_sound.play()
+                    if bomb_num<3:
+                        bomb_num+=1
+                    bomb_supply.active=False
+
+            # 绘制超级子弹补给并检测是否获得
+            if bullet_supply.active:
+                bullet_supply.move() 
+                screen.blit(bullet_supply.image,bullet_supply.rect)
+                if pygame.sprite.collide_mask(bullet_supply,me):
+                    get_bullet_sound.play()
+                    #发射超级子弹
+                    is_double_bullet=True
+                    pygame.time.set_timer(DOUBLE_BULLET_TIME,20*1000)
+                    bullet_supply.active=False
+                    
+            #发射子弹
+            if not(delay%10):
+                bullet_sound.play()
+                if is_double_bullet:
+                    bullets=bullet2
+                    bullets[bullet2_index].reset((me.rect.centerx-33,me.rect.centery))
+                    bullets[bullet2_index+1].reset((me.rect.centerx+30,me.rect.centery))
+                    bullet2_index=(bullet2_index+2)%BULLET2_NUM
+                else:
+                    bullets=bullet1 
+                    bullets[bullet1_index].reset(me.rect.midtop)
+                    bullet1_index=(bullet1_index+1)%BULLET1_NUM
+
+
+            #检测子弹是否击中敌机
+            for b in bullets:
+                if b.active:
+                    b.move()
+                    screen.blit(b.image,b.rect)
+                    enemy_hit=pygame.sprite.spritecollide(b,enemies,False,pygame.sprite.collide_mask)
+                    if enemy_hit:
+                        b.active=False
+                        for e in enemy_hit:
+                            if e in mid_enemies or e in big_enemies:
+                                e.energy-=1
+                                e.hit=True
+                                if e.energy==0:
+                                    e.active=False
+                            else:
+                                e.active=False
+
+            #绘制大型敌机
+            for each in big_enemies:
+                if each.active:            
+                    each.move()
+                    if each.hit:
+                        #绘制被打到的特效
+                        screen.blit(each.image_hit,each.rect)
+                        each.hit=False
+                    else:    
+                        if switch_image:
+                            screen.blit(each.image1,each.rect)
+                        else:
+                            screen.blit(each.image2,each.rect)
+
+                    #绘制血槽
+                    pygame.draw.line(screen,BLACK,\
+                                     (each.rect.left,each.rect.top-5),\
+                                     (each.rect.right,each.rect.top-5),\
+                                     2)
+                    #当生命大于20%，显示绿色，否则显示红色
+                    energy_remain=each.energy/enemy.BigEnemy.energy
+                    if energy_remain>0.2:
+                        energy_color=GREEN
+                    else:
+                        energy_color=RED
+                    pygame.draw.line(screen,energy_color,\
+                                    (each.rect.left,each.rect.top-5),\
+                                    (each.rect.left+each.rect.width*energy_remain,each.rect.top-5),2)
+                        
+                    #即将出现在画面中，播放音效
+                    if each.rect.bottom==-50:
+                        enemy3_fly_sound.play(-1)      
+                else:
+                    #毁灭
+                    if not(delay%3):
+                        screen.blit(each.destroy_images[e3_destroy_index],each.rect)
+                        if e3_destroy_index==0:
+                            enemy3_down_sound.play()
+                        e3_destroy_index=(e3_destroy_index+1)%6
+                        if e3_destroy_index==0:
+                            each.reset()
+                            score+=10000
+                            enemy3_fly_sound.stop()
+                        
+            #绘制中型敌机
+                for each in mid_enemies:
+                    if each.active:
+                        each.move()
+                        if each.hit:
+                            #绘制被打到的特效
+                            screen.blit(each.image_hit,each.rect)
+                            each.hit=False
+                
+                        else:
+                            screen.blit(each.image,each.rect)
+                        #绘制血槽
+                        pygame.draw.line(screen,BLACK,(each.rect.left,each.rect.top - 5),(each.rect.right,each.rect.top - 5),2)
+                        #当生命大于20%，显示绿色，否则显示红色
+                        energy_remain=each.energy/enemy.MidEnemy.energy
+                        if energy_remain>0.2:
+                            energy_color=GREEN
+                        else:
+                            energy_color=RED
+                        pygame.draw.line(screen,energy_color,(each.rect.left,each.rect.top - 5),(each.rect.left + each.rect.width * energy_remain,each.rect.top - 5),2)
+                    else:
+                        #毁灭
+                        if not(delay%3):
+                            if e2_destroy_index==0:
+                                enemy2_down_sound.play()
+                            screen.blit(each.destroy_images[e2_destroy_index],each.rect)
+                            e2_destroy_index=(e2_destroy_index+1)%4
+                            if e2_destroy_index==0:
+                                score+=6000
+                                each.reset()
+                            
+                                
+             #绘制小型敌机
+                for each in small_enemies:
+                    if each.active:
+                        each.move()
+                        screen.blit(each.image,each.rect)
+                    else:
+                        #毁灭                    
+                        if not(delay%3):
+                            if e1_destroy_index==0:
+                                enemy1_down_sound.play()
+                            screen.blit(each.destroy_images[e1_destroy_index],each.rect)
+                            e1_destroy_index=(e1_destroy_index+1)%4
+                            if e1_destroy_index==0:
+                                score+=1000
+                                each.reset()
